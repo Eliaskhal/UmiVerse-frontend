@@ -1,19 +1,17 @@
 <template>
   <div class="login-container">
     <h2>Login</h2>
-    <form @submit.prevent="handleSubmit">
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" v-model="username" required />
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" v-model="password" required />
-      </div>
+    <form @submit.prevent="loginUser">
+      <label for="username">Username:</label>
+      <input type="text" id="username" v-model="username" required>
+      <br><br>
+      <label for="password">Password:</label>
+      <input type="password" id="password" v-model="password" required>
+      <br><br>
       <button type="submit">Login</button>
     </form>
-    <router-link to="/register">Go to Register</router-link>
     <p v-if="message" class="message">{{ message }}</p>
+    <p>Don't have an account? <router-link to="/register">Register here</router-link></p>
   </div>
 </template>
 
@@ -27,7 +25,7 @@ export default {
     };
   },
   methods: {
-    async handleSubmit() {
+    async loginUser() {
       try {
         const response = await fetch('http://localhost:8088/api/users/login', {
           method: 'POST',
@@ -40,20 +38,13 @@ export default {
           })
         });
 
-        const responseData = await response.json();
-
-        if (!response.ok) {
-          throw new Error(responseData.message || 'Login failed');
+        const data = await response.json();
+        if (response.ok) {
+          document.cookie = `userID=${data.code}`;
+          this.$router.push('/dashboard');
+        } else {
+          throw new Error(data.message || 'Login failed');
         }
-
-        console.log('Login successful', responseData);
-        this.message = 'Login successful';
-
-        // Save userID in a cookie
-        document.cookie = `userID=${responseData.userID}`;
-
-        // Redirect to dashboard
-        this.$router.push('/dashboard');
       } catch (error) {
         console.error('Error:', error);
         this.message = error.message || 'Login failed';
@@ -72,24 +63,7 @@ export default {
   border-radius: 4px;
 }
 
-.form-group {
-  margin-bottom: 1em;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5em;
-}
-
-input {
-  width: 100%;
-  padding: 0.5em;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
 button {
-  width: 100%;
   padding: 0.75em;
   background-color: #007bff;
   color: white;
@@ -103,15 +77,7 @@ button:hover {
 }
 
 .message {
-  color: green;
+  color: red;
   margin-top: 1em;
-}
-
-/* Styling for router-link */
-.router-link {
-  display: block;
-  margin-top: 1em;
-  text-decoration: none;
-  color: #007bff;
 }
 </style>

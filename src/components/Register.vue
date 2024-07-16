@@ -1,34 +1,29 @@
 <template>
   <div class="register-container">
     <h2>Register</h2>
-    <form @submit.prevent="handleSubmit">
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" v-model="username" required />
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" v-model="password" required />
-      </div>
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" v-model="email" required />
-      </div>
-      <div class="form-group">
-        <label for="fullname">Full Name</label>
-        <input type="text" id="fullname" v-model="fullname" required />
-      </div>
-      <div class="form-group">
-        <label>Role</label><br>
-        <input type="radio" id="student" v-model="role" value="student" required>
-        <label for="student">Student</label><br>
-        <input type="radio" id="professor" v-model="role" value="professor">
-        <label for="professor">Professor</label><br>
-      </div>
+    <form @submit.prevent="registerUser">
+      <label for="username">Username:</label>
+      <input type="text" id="username" v-model="username" required>
+      <br><br>
+      <label for="email">Email:</label>
+      <input type="email" id="email" v-model="email" required>
+      <br><br>
+      <label for="fullName">Full Name:</label>
+      <input type="text" id="fullName" v-model="fullName" required>
+      <br><br>
+      <label>Role:</label>
+      <input type="radio" id="student" v-model="role" value="student" required>
+      <label for="student">Student</label>
+      <input type="radio" id="professor" v-model="role" value="professor">
+      <label for="professor">Professor</label>
+      <br><br>
+      <label for="password">Password:</label>
+      <input type="password" id="password" v-model="password" required>
+      <br><br>
       <button type="submit">Register</button>
     </form>
-    <router-link to="/login">Already have an account? Login here</router-link>
     <p v-if="message" class="message">{{ message }}</p>
+    <p>Already have an account? <router-link to="/login">Login here</router-link></p>
   </div>
 </template>
 
@@ -37,15 +32,15 @@ export default {
   data() {
     return {
       username: '',
-      password: '',
       email: '',
-      fullname: '',
-      role: 'student', // Default role
+      fullName: '',
+      role: 'student',
+      password: '',
       message: ''
     };
   },
   methods: {
-    async handleSubmit() {
+    async registerUser() {
       try {
         const response = await fetch('http://localhost:8088/api/users/register', {
           method: 'POST',
@@ -54,27 +49,20 @@ export default {
           },
           body: JSON.stringify({
             username: this.username,
-            password: this.password,
             email: this.email,
-            fullname: this.fullname,
-            role: this.role
+            fullName: this.fullName,
+            role: this.role,
+            password: this.password
           })
         });
 
-        const responseData = await response.json();
-
-        if (!response.ok) {
-          throw new Error(responseData.message || 'Registration failed');
+        const data = await response.json();
+        if (response.ok) {
+          document.cookie = `userID=${data.code}`;
+          this.$router.push('/dashboard');
+        } else {
+          throw new Error(data.message || 'Registration failed');
         }
-
-        console.log('Registration successful', responseData);
-        this.message = 'Registration successful';
-
-        // Save userID in a cookie
-        document.cookie = `userID=${responseData.userID}`;
-
-        // Redirect to dashboard
-        this.$router.push('/dashboard');
       } catch (error) {
         console.error('Error:', error);
         this.message = error.message || 'Registration failed';
@@ -93,24 +81,7 @@ export default {
   border-radius: 4px;
 }
 
-.form-group {
-  margin-bottom: 1em;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5em;
-}
-
-input {
-  width: 100%;
-  padding: 0.5em;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
 button {
-  width: 100%;
   padding: 0.75em;
   background-color: #007bff;
   color: white;
@@ -124,15 +95,7 @@ button:hover {
 }
 
 .message {
-  color: green;
+  color: red;
   margin-top: 1em;
-}
-
-/* Styling for router-link */
-.router-link {
-  display: block;
-  margin-top: 1em;
-  text-decoration: none;
-  color: #007bff;
 }
 </style>

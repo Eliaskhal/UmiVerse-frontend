@@ -1,6 +1,6 @@
 <template>
-  <div class="login-container">
-    <h2>Login</h2>
+  <div class="register-container">
+    <h2>Register</h2>
     <form @submit.prevent="handleSubmit">
       <div class="form-group">
         <label for="username">Username</label>
@@ -10,9 +10,24 @@
         <label for="password">Password</label>
         <input type="password" id="password" v-model="password" required />
       </div>
-      <button type="submit">Login</button>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" v-model="email" required />
+      </div>
+      <div class="form-group">
+        <label for="fullname">Full Name</label>
+        <input type="text" id="fullname" v-model="fullname" required />
+      </div>
+      <div class="form-group">
+        <label>Role</label><br>
+        <input type="radio" id="student" v-model="role" value="student" required>
+        <label for="student">Student</label><br>
+        <input type="radio" id="professor" v-model="role" value="professor">
+        <label for="professor">Professor</label><br>
+      </div>
+      <button type="submit">Register</button>
     </form>
-    <router-link to="/register">Go to Register</router-link>
+    <router-link to="/login">Already have an account? Login here</router-link>
     <p v-if="message" class="message">{{ message }}</p>
   </div>
 </template>
@@ -23,31 +38,37 @@ export default {
     return {
       username: '',
       password: '',
+      email: '',
+      fullname: '',
+      role: 'student', // Default role
       message: ''
     };
   },
   methods: {
     async handleSubmit() {
       try {
-        const response = await fetch('http://localhost:8088/api/users/login', {
+        const response = await fetch('http://localhost:8088/api/users/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             username: this.username,
-            password: this.password
+            password: this.password,
+            email: this.email,
+            fullname: this.fullname,
+            role: this.role
           })
         });
 
         const responseData = await response.json();
 
         if (!response.ok) {
-          throw new Error(responseData.message || 'Login failed');
+          throw new Error(responseData.message || 'Registration failed');
         }
 
-        console.log('Login successful', responseData);
-        this.message = 'Login successful';
+        console.log('Registration successful', responseData);
+        this.message = 'Registration successful';
 
         // Save userID in a cookie
         document.cookie = `userID=${responseData.userID}`;
@@ -56,7 +77,7 @@ export default {
         this.$router.push('/dashboard');
       } catch (error) {
         console.error('Error:', error);
-        this.message = error.message || 'Login failed';
+        this.message = error.message || 'Registration failed';
       }
     }
   }
@@ -64,7 +85,7 @@ export default {
 </script>
 
 <style scoped>
-.login-container {
+.register-container {
   max-width: 400px;
   margin: 0 auto;
   padding: 1em;

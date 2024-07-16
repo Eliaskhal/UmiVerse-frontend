@@ -1,37 +1,49 @@
 <template>
   <div class="dashboard-container">
     <h2>Dashboard</h2>
-    <p v-if="userName">Welcome, {{ userName }}</p>
-    <div v-if="connectedUsers.length > 0">
-      <h3>Connected Users</h3>
+    <p>Welcome, {{ userName }}</p>
+    <button @click="disconnect">Disconnect</button>
+    <p v-if="message" class="message">{{ message }}</p>
+    <div>
+      <h3>Active Users</h3>
       <ul>
-        <li v-for="user in connectedUsers" :key="user.userID">
-          {{ user.username }} ({{ user.fullName }})
+        <li v-for="user in activeUsers" :key="user.userId">
+          {{ user.username }}
+          <button @click="sendMessage(user.userId)">Send Message</button>
         </li>
       </ul>
     </div>
-    <button @click="disconnect">Disconnect</button>
-    <p v-if="message" class="message">{{ message }}</p>
+    <div>
+      <h3>Received Messages</h3>
+      <ul>
+        <li v-for="receivedMessage in receivedMessages" :key="receivedMessage.id">
+          <strong>{{ receivedMessage.sender }}</strong>: {{ receivedMessage.content }}
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script>
+import SockJS from 'sockjs-client';
+import Stomp from 'stompjs';
+
 export default {
   data() {
     return {
       message: '',
       userName: '',
-      connectedUsers: []
+      activeUsers: [],
+      receivedMessages: [],
+      stompClient: null
     };
   },
   mounted() {
-    // Check if userID cookie exists, fetch user details if it does
     const userID = this.getCookie('userID');
     if (userID) {
       this.fetchUserDetails(userID);
-      this.fetchConnectedUsers(userID);
+      this.initWebsocket();
     } else {
-      // Redirect to login if userID cookie is not found
       this.$router.push('/login');
     }
   },
@@ -40,38 +52,35 @@ export default {
       try {
         const response = await fetch(`http://localhost:8088/api/users/details?id=${userID}`);
         const data = await response.json();
-
-        if (response.status !== 302) {
+        if (response.ok) {
+          this.userName = data.username;
+          await this.fetchActiveUsers();
+        } else {
           throw new Error(data.message || 'Failed to fetch user details');
         }
-
-        // Assuming the response contains a 'username' field
-        this.userName = data.username;
       } catch (error) {
         console.error('Error:', error);
         this.message = error.message || 'Failed to fetch user details';
       }
     },
-    async fetchConnectedUsers(userID) {
+    async fetchActiveUsers() {
       try {
         const response = await fetch(`http://localhost:8088/api/users/online`);
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to fetch connected users');
+        if (response.ok) {
+          this.activeUsers = data.filter(user => user.userId !== this.getCookie('userID'));
+        } else {
+          throw new Error(data.message || 'Failed to fetch active users');
         }
-
-        // Filter out the current user from connected users
-        this.connectedUsers = data.filter(user => user.userID !== parseInt(userID));
       } catch (error) {
         console.error('Error:', error);
-        this.message = error.message || 'Failed to fetch connected users';
+        this.message = error.message || 'Failed to fetch active users';
       }
     },
-    async disconnect() {
+    disconnect() {
       try {
         const userID = this.getCookie('userID');
-        const response = await fetch(`http://localhost:8088/api/users/disconnect?id=${userID}`, {
+        const response = fetch(`http://localhost:8088/api/users/disconnect?id=${userID}`, {
           method: 'POST'
         });
 
@@ -79,16 +88,42 @@ export default {
           throw new Error('Failed to disconnect');
         }
 
-        // Clear user details and cookie
-        this.userName = '';
-        document.cookie = `userID=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        const data = response.json;
 
-        // Redirect to login page
+        console.log('User disconnected', data);
+        this.body = 'User disconnected';
+
+        document.cookie = `userID=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         this.$router.push('/login');
       } catch (error) {
         console.error('Error:', error.message);
         this.message = error.message || 'Failed to disconnect';
       }
+    },
+    initWebsocket() {
+      const socket = new SockJS('http://localhost:8088/ws');
+      this.stompClient = Stomp.over(socket);
+      this.stompClient.connect({}, () => {
+        console.log('Connected to websocket');
+        this.subscribeToMessages();
+        this.fetchActiveUsers();
+      }, (error) => {
+        console.error('Websocket error:', error);
+      });
+    },
+    subscribeToMessages() {
+      this.stompClient.subscribe(`/user/${this.getCookie('userID')}/queue/messages`, (message) => {
+        console.log('Received message:', message.body);
+        this.receivedMessages.push(JSON.parse(message.body));
+      });
+    },
+    sendMessage(recipientId) {
+      const messageContent = 'Hello, let’s chat!';
+      this.stompClient.send(`/app/chat`, {}, JSON.stringify({
+        senderId: this.getCookie('userID'),
+        recipientId: recipientId,
+        content: messageContent
+      }));
     },
     getCookie(name) {
       const value = `; ${document.cookie}`;
@@ -101,11 +136,9 @@ export default {
 
 <style scoped>
 .dashboard-container {
-  max-width: 400px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 1em;
-  border: 1px solid #ccc;
-  border-radius: 4px;
 }
 
 button {
@@ -122,7 +155,7 @@ button:hover {
 }
 
 .message {
-  color: green;
+  color: red;
   margin-top: 1em;
 }
 </style>

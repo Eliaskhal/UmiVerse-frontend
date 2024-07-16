@@ -12,5 +12,11 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
-  }
+  },
+  optimizeDeps: {
+    include: ['sockjs-client'], // Ensure SockJS is included in optimized dependencies
+  },
+  define: {
+    global: {},
+  },
 })

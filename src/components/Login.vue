@@ -1,4 +1,3 @@
-<!-- src/components/Login.vue -->
 <template>
   <div class="login-container">
     <h2>Login</h2>
@@ -12,6 +11,7 @@
         <input type="password" id="password" v-model="password" required />
       </div>
       <button type="submit">Login</button>
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     </form>
   </div>
 </template>
@@ -21,13 +21,14 @@ export default {
   data() {
     return {
       username: '',
-      password: ''
+      password: '',
+      errorMessage: ''
     };
   },
   methods: {
     async handleSubmit() {
       try {
-        const response = await fetch('https://your-api-endpoint/login', {
+        const response = await fetch('http://localhost:8088/api/users/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -39,15 +40,18 @@ export default {
         });
 
         if (!response.ok) {
-          throw new Error('Login failed');
+          const errorText = await response.text();
+          throw new Error(errorText || 'Login failed');
         }
 
-        const data = await response.json();
+        const data = await response.text();
         console.log('Login successful', data);
-        // Handle successful login
+        localStorage.setItem('userId', data); // Store userId in local storage
+        this.errorMessage = ''; // Clear any previous error messages
+        this.$router.push('/dashboard'); // Redirect to dashboard
       } catch (error) {
-        console.error('Error:', error);
-        // Handle login error
+        console.error('Error:', error.message);
+        this.errorMessage = error.message; // Display the error message
       }
     }
   }
@@ -91,5 +95,10 @@ button {
 
 button:hover {
   background-color: #0056b3;
+}
+
+.error-message {
+  color: red;
+  margin-top: 1em;
 }
 </style>

@@ -1,23 +1,15 @@
-<!-- src/App.vue -->
 <template>
-  <div id="app" class="login">
-    <Login />
+  <div id="app">
+    <router-view></router-view>
   </div>
 </template>
 
 <script>
-import Login from './components/Login.vue';
-
 export default {
-  components: {
-    Login
-  }
+  name: 'App'
 };
 </script>
 
 <style>
-.login {
-  left: 40%;
-  width: 20%;
-}
+/* Your styles here */
 </style>

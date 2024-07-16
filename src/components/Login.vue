@@ -39,16 +39,26 @@ export default {
           })
         });
 
+        const responseData = await response.json();
+
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Login failed');
+          throw new Error(responseData); // Throw the error message received from backend
         }
 
-        const data = await response.text();
-        console.log('Login successful', data);
-        localStorage.setItem('userId', data); // Store userId in local storage
-        this.errorMessage = ''; // Clear any previous error messages
-        this.$router.push('/dashboard'); // Redirect to dashboard
+        console.log('Login response:', responseData);
+
+        // Assuming responseData contains the success message and code (userID)
+        const { message, code } = responseData;
+        console.log('User authenticated successfully:', message, code);
+
+        // Store userID (code) in local storage for future requests or navigation
+        localStorage.setItem('userId', code);
+
+        // Clear any previous error messages
+        this.errorMessage = '';
+
+        // Optionally redirect to dashboard or another page
+        this.$router.push('/dashboard');
       } catch (error) {
         console.error('Error:', error.message);
         this.errorMessage = error.message; // Display the error message

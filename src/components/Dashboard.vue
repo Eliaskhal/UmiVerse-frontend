@@ -15,6 +15,13 @@ export default {
   },
   methods: {
     async disconnect() {
+      const userId = localStorage.getItem('userId'); // Retrieve userId from local storage
+
+      if (!userId) {
+        this.message = 'User ID not found';
+        return;
+      }
+
       try {
         const response = await fetch(`http://localhost:8088/api/users/disconnect?id=${userId}`, {
           method: 'POST'
@@ -27,8 +34,8 @@ export default {
         const data = await response.text();
         console.log('User disconnected', data);
         this.message = data;
-        // Optionally redirect to login or another page
-        this.$router.push('/');
+        localStorage.removeItem('userId'); // Optionally remove userId from local storage
+        this.$router.push('/'); // Redirect to login
       } catch (error) {
         console.error('Error:', error.message);
         this.message = error.message;

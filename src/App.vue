@@ -5,6 +5,9 @@
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
+import SockJS from 'sockjs-client';
+import Stomp from 'stompjs';
 export default {
   name: 'App'
 };

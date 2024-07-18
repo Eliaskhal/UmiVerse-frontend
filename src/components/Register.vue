@@ -39,10 +39,16 @@ export default {
       message: ''
     };
   },
+  mounted() {
+    const userID = this.getCookie('userID');
+    if (userID) {
+      this.$router.push('/dashboard');
+    }
+  },
   methods: {
     async registerUser() {
       try {
-        const response = await fetch('http://localhost:8088/api/users/register', {
+        const response = await fetch('http://localhost:8080/api/users/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -59,7 +65,7 @@ export default {
         const data = await response.json();
         if (response.ok) {
           document.cookie = `userID=${data.code}`;
-          this.$router.push('/dashboard');
+          await this.$router.push('/dashboard');
         } else {
           throw new Error(data.message || 'Registration failed');
         }
@@ -67,6 +73,11 @@ export default {
         console.error('Error:', error);
         this.message = error.message || 'Registration failed';
       }
+    },
+    getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
     }
   }
 };
